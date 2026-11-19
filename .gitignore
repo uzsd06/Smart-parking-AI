@@ -1,0 +1,17 @@
+
+# Virtual environments
+venv/
+.venv/
+
+# Python cache
+__pycache__/
+*.py[cod]
+**/__pycache__/
+
+# Local databases
+*.db
+*.sqlite
+*.sqlite3
+
+# VS Code
+.vscode/
