@@ -26,6 +26,19 @@ def initialize_database():
             schema = file.read()
 
         connection.executescript(schema)
+
+        # Add charging preference to existing bookings table if missing
+        cursor = connection.cursor()
+        cursor.execute("PRAGMA table_info(bookings)")
+        columns = [column[1] for column in cursor.fetchall()]
+
+        if "requires_charging" not in columns:
+            cursor.execute("""
+                ALTER TABLE bookings
+                ADD COLUMN requires_charging INTEGER NOT NULL DEFAULT 0
+                CHECK (requires_charging IN (0, 1))
+            """)
+
         connection.commit()
 
         print("SmartPark AI database initialized successfully!")
@@ -35,6 +48,7 @@ def initialize_database():
 
     finally:
         connection.close()
+
 
 
 if __name__ == "__main__":

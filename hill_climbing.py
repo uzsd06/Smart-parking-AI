@@ -1,16 +1,18 @@
 from datetime import timedelta
-def is_compatible(request, slot):
 
+def is_compatible(request, slot):
     if request.vehicle_type == "accessible":
         return slot.slot_type == "accessible"
 
     if request.vehicle_type == "EV":
         if request.requires_charging:
             return slot.slot_type == "EV"
-
         return slot.slot_type in ("EV", "regular")
 
-    return slot.slot_type == "regular"
+    if request.vehicle_type == "regular":
+        return slot.slot_type in ("regular", "EV")
+
+    return False
 
 def has_time_conflict(request, other_request):
 

@@ -68,7 +68,7 @@ def create_booking(user_id, vehicle_id, slot_id,
                 user_id, vehicle_id, slot_id,
                 arrival_time, duration, destination_gate, status
             )
-            VALUES (?, ?, ?, ?, ?, ?, 'pending')
+            VALUES (?, ?, ?, ?, ?, ?, 'allocated')
         """, (
             user_id, vehicle_id, slot_id,
             arrival_time, duration, destination_gate

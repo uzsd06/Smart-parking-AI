@@ -48,6 +48,9 @@ CREATE TABLE IF NOT EXISTS bookings (
     duration INTEGER NOT NULL CHECK (duration > 0),
     destination_gate TEXT NOT NULL,
 
+    requires_charging INTEGER NOT NULL DEFAULT 0
+        CHECK (requires_charging IN (0, 1)),
+
     status TEXT NOT NULL DEFAULT 'pending'
         CHECK (status IN (
             'pending',
