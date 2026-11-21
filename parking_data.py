@@ -84,6 +84,7 @@ def create_demo_requests():
         )
     ]
     return requests
+
 def validate_parking_request(request):
 
     # Check booking ID
@@ -98,8 +99,8 @@ def validate_parking_request(request):
     if type(request.duration_minutes) is not int or request.duration_minutes <= 0:
         return False, "Parking duration must be a positive integer."
 
-    # Check destination gate
-    if request.destination_gate not in ("A", "B", "C"):
+    if request.destination_gate not in (
+    "A", "B", "C", "North Gate", "South Gate" ):
         return False, "Invalid destination gate."
 
     # Check arrival time
