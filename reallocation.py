@@ -1,9 +1,11 @@
 
 from parking_data import validate_parking_request
-from hill_climbing import is_valid_assignment, fitness
+from hill_climbing import hill_climbing
 
 
-def cancel_booking(request_id, requests, allocation, cancelled_ids):
+def cancel_booking(
+    request_id, requests, allocation, cancelled_ids
+):
 
     for i, request in enumerate(requests):
 
@@ -24,54 +26,63 @@ def cancel_booking(request_id, requests, allocation, cancelled_ids):
 
 
 def submit_parking_request(
-    request, requests, allocation, slots, cancelled_ids
+    request,
+    requests,
+    allocation,
+    slots,
+    cancelled_ids,
+    locked_indices=None
 ):
 
-    # Validate the parking request
     is_valid, message = validate_parking_request(request)
 
     if not is_valid:
         print("Request rejected:", message)
         return False
 
-    # Prevent duplicate booking IDs
     existing_ids = [r.request_id for r in requests]
 
     if request.request_id in existing_ids:
         print("Booking ID already exists.")
         return False
 
-    # Add the new vehicle request
+    if len(requests) != len(allocation):
+        print("Request and allocation data do not match.")
+        return False
+
     requests.append(request)
     allocation.append(None)
 
+    locked_indices = locked_indices or set()
+
+    try:
+        best_state, best_score, iterations = hill_climbing(
+            requests,
+            slots,
+            initial_state=allocation.copy(),
+            locked_indices=locked_indices
+        )
+
+    except ValueError as error:
+        requests.pop()
+        allocation.pop()
+        print("Allocation failed:", error)
+        return False
+
+    allocation[:] = best_state
+
     new_index = len(requests) - 1
 
-    best_slot = None
-    best_score = None
-
-    # Search for a compatible and available slot
-    for slot in slots:
-
-        neighbour = allocation.copy()
-        neighbour[new_index] = slot.slot_id
-
-        if not is_valid_assignment(requests, slots, neighbour):
-            continue
-
-        score = fitness(requests, slots, neighbour)
-
-        if best_score is None or score > best_score:
-            best_score = score
-            best_slot = slot.slot_id
-
-    # Allocate or add to waiting list
-    if best_slot is not None:
-
-        allocation[new_index] = best_slot
+    if allocation[new_index] is not None:
 
         print(
-            f"Vehicle {request.request_id} allocated to {best_slot}."
+            f"Vehicle {request.request_id} allocated to "
+            f"{allocation[new_index]}."
+        )
+
+        print(
+            f"Optimisation score: {best_score}, "
+            f"iterations: {iterations}"
         )
 
         return True
@@ -84,49 +95,55 @@ def submit_parking_request(
 
 
 def reallocate_waiting_vehicle(
-    requests, allocation, slots, cancelled_ids
+    requests,
+    allocation,
+    slots,
+    cancelled_ids,
+    locked_indices=None
 ):
 
-    waiting_indices = [
-        i for i, slot_id in enumerate(allocation)
-        if slot_id is None
-        and requests[i].request_id not in cancelled_ids
-    ]
+    if len(requests) != len(allocation):
+        print("Request and allocation data do not match.")
+        return False
 
-    if not waiting_indices:
-        print("No waiting vehicles available for reallocation.")
-        return
+    locked_indices = locked_indices or set()
 
-    current_state = allocation.copy()
+    # Keep cancelled bookings unallocated.
+    initial_state = allocation.copy()
 
-    for i in waiting_indices:
+    for i, request in enumerate(requests):
 
-        best_slot = None
-        best_score = None
+        if request.request_id in cancelled_ids:
+            initial_state[i] = None
 
-        for slot in slots:
+    try:
+        best_state, best_score, iterations = hill_climbing(
+            requests,
+            slots,
+            initial_state=initial_state,
+            locked_indices=locked_indices
+        )
 
-            neighbour = current_state.copy()
-            neighbour[i] = slot.slot_id
+    except ValueError as error:
+        print("Reallocation failed:", error)
+        return False
 
-            if not is_valid_assignment(
-                requests, slots, neighbour
-            ):
-                continue
-
-            score = fitness(requests, slots, neighbour)
-
-            if best_score is None or score > best_score:
-                best_score = score
-                best_slot = slot.slot_id
-
-        if best_slot is not None:
-            current_state[i] = best_slot
-            print(
-                f"Vehicle {requests[i].request_id} "
-                f"reallocated to {best_slot}."
-            )
-
-    allocation[:] = current_state
+    # Update the in-memory allocation.
+    allocation[:] = best_state
 
     print("Reallocation completed.")
+    print("Optimisation score:", best_score)
+    print("Iterations:", iterations)
+
+    for request, slot_id in zip(requests, allocation):
+
+        if slot_id is not None:
+            print(
+                f"Vehicle {request.request_id} -> {slot_id}"
+            )
+        else:
+            print(
+                f"Vehicle {request.request_id} -> Waiting list"
+            )
+
+    return True
