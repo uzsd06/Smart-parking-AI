@@ -1,4 +1,7 @@
+
 from datetime import timedelta
+
+
 def is_compatible(request, slot):
 
     if request.vehicle_type == "accessible":
@@ -10,7 +13,11 @@ def is_compatible(request, slot):
 
         return slot.slot_type in ("EV", "regular")
 
-    return slot.slot_type == "regular"
+    if request.vehicle_type == "regular":
+        return slot.slot_type in ("regular", "EV")
+
+    return False
+
 
 def has_time_conflict(request, other_request):
 
@@ -25,6 +32,24 @@ def has_time_conflict(request, other_request):
     )
 
     return request_start < other_end and other_start < request_end
+
+
+def has_overlapping_charging_request(request, requests):
+
+    for other_request in requests:
+
+        if other_request is request:
+            continue
+
+        if (
+            other_request.vehicle_type == "EV"
+            and other_request.requires_charging
+            and has_time_conflict(request, other_request)
+        ):
+            return True
+
+    return False
+
 
 def is_valid_assignment(requests, slots, state):
 
@@ -43,7 +68,21 @@ def is_valid_assignment(requests, slots, state):
         if slot is None:
             return False
 
-        if not is_compatible(requests[i], slot):
+        request = requests[i]
+
+        if not is_compatible(request, slot):
+            return False
+
+        # Protect EV slots for overlapping charging demand.
+        # Non-charging vehicles cannot use EV slots
+        # when an overlapping EV charging request exists.
+        if (
+            slot.slot_type == "EV"
+            and not request.requires_charging
+            and has_overlapping_charging_request(
+                request, requests
+            )
+        ):
             return False
 
         if slot_id not in assigned:
@@ -52,13 +91,14 @@ def is_valid_assignment(requests, slots, state):
         for previous_index in assigned[slot_id]:
 
             if has_time_conflict(
-                requests[i], requests[previous_index]
+                request, requests[previous_index]
             ):
                 return False
 
         assigned[slot_id].append(i)
 
     return True
+
 
 def fitness(requests, slots, state):
 
@@ -75,8 +115,7 @@ def fitness(requests, slots, state):
             s for s in slots if s.slot_id == slot_id
         )
 
-        # Every successfully allocated vehicle
-        # receives a major score.
+        # Reward every successfully allocated vehicle.
         score += 1000
 
         # Prefer parking spaces near the destination gate.
@@ -97,6 +136,7 @@ def fitness(requests, slots, state):
             score += 40
 
     return score
+
 
 def hill_climbing(requests, slots):
 
@@ -136,7 +176,7 @@ def hill_climbing(requests, slots):
                     best_score = neighbour_score
                     best_state = neighbour
 
-        # No better neighbouring solution exists.
+        # Stop when no better neighbouring solution exists.
         if best_score <= current_score:
             break
 
