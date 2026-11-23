@@ -98,6 +98,6 @@ The application follows a six-step workflow:
 
 ## 👥 7. Team Contributions
 
-| **Tushita (Member 1)** | Hill Climbing Search Algorithm, fitness function design, parking slot allocation, vehicle-slot compatibility, gate-distance optimisation, availability checking, booking cancellation and waiting-list management with automatic reallocation. |
-| **Vidhi (Member 2)** | Backend development, SQLite database design and initialization, user registration and login, vehicle management, parking booking and cancellation, booking conflict detection, availability checking and integration of backend modules with the AI allocation algorithm. |
-| **Uzma (Member 3)** | Streamlit frontend development, application pages, user interface, admin dashboard, parking map visualisation, data analytics, charts, notifications interface and application deployment. |
+1. **Tushita (Member 1)** - Hill Climbing Search Algorithm, fitness function design, parking slot allocation, vehicle-slot compatibility, gate-distance optimisation, availability checking, booking cancellation and waiting-list management with automatic reallocation. 
+2. **Vidhi (Member 2)** - Backend development, SQLite database design and initialization, user registration and login, vehicle management, parking booking and cancellation, booking conflict detection, availability checking and integration of backend modules with the AI allocation algorithm.
+3. **Uzma (Member 3)** - Streamlit frontend development, application pages, user interface, admin dashboard, parking map visualisation, data analytics, charts, notifications interface and application deployment.
